@@ -32,8 +32,7 @@ volatile uint8_t g_canupdate = 0;
 
 //The TLC5941 update loop sets up the pin change interrupt on A1 (XLAT)
 //before taking it low. This effectively mimics a software interrupt
-//and must be used to update the data in the TLC5941 shift registers or 
-//used to call dontLatch() to prevent further XLAT triggers.
+//and must be used to update the data in the TLC5941 shift registers.
 ISR(PCINT1_vect) {
   //unset interrupt since we explicity set it right before triggering it
   *digitalPinToPCMSK(XLAT) &= ~bit (digitalPinToPCMSKbit(XLAT));
@@ -48,7 +47,11 @@ void setup() {
 
 void loop() {
   if (g_canupdate == 1) {
-    
+      TLC5941.setOutput(0,random(4095)); //r
+      TLC5941.setOutput(1,random(4095)); //b
+      TLC5941.setOutput(2,random(4095)); //g
+      TLC5941.shiftInAll();
+      g_canupdate = 0;
   }
 }
 

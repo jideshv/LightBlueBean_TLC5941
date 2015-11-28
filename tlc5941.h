@@ -6,28 +6,30 @@
 #define XLAT   A1
 #define MODE   0
 #define BLANK  1
-#define GSCLK  2
+#define GSCLK  2  //Only pins 1 and 2 are supported for GSCLK using this library since it users Timer1
 #define SOUT   4
 #define SCLK   5
 
 //TLC5941 Configuration Data
 
 // Amount of clock ticks for half a PWM pulse with no pre-scaling.
-// At 80 cycles we will get a PWM frequency of 50kHz and 
-// max update rate (BLANK pulses) of roughly 12Hz (8000000/160/4096 = ~12).
-#define CLOCK_CYCLES     80
+// Use only the following values for different PWM frequencies:
+// 1Mhz | 4
+// 2Mhz | 2
+#define CLOCK_CYCLES 4
 
 //Number of PWM pulses in a full PWM cycle at which time we send a BLANK pulse.
-//See the TLC5941 datasheet for this.
-#define PWM_PULSES     4096
+//TLC5941 datasheet defines this so don't change.
+#define PWM_PULSES 4096
 
 //Number of full PWM cycles between XLAT and triggering next IO refresh loop.
-//If this is set to 1 the IO refresh loop will happen ~12 times a second.
+//If this is set to 1 the IO refresh loop will happen every time BLANK is pulsed.
 //Careful if you are sharing the same serial bus with other components as 
 //the TLC5941 could latch invalid data when this is run in the ISR. 
-//To protect from this set the g_dontlatch global to 1 while using other serial
-//components on the same bus.
-#define PWM_CYCLES        3
+//To protect from this call dontLatch while using other serial
+//components on the same bus and canLatch when done.
+//Setting this too low will cause a flicker. 1 = 2ms at 2Mhz or 4ms at 1Mhz
+#define PWM_CYCLES 25
 
 class TLC5941Class {
   private:
@@ -47,8 +49,8 @@ class TLC5941Class {
   //Call in setup to initialize the TLC5941
   static void init ();
 
-  //The ISR that is called for each PWM Pulse
-  static void pwmPulseISR();
+  //The ISR that is called every 16384 clock cycles by reusing Timer0
+  static void blankISR();
   
   //Call this to prevent invalid data from being latched into the TLC5941 gray scale
   //registers. This is always set to 0 after an XLAT pulse since the shift registers
@@ -59,8 +61,8 @@ class TLC5941Class {
   //Call this to allow data to be latched into the TLC5941 gray scale registers.
   static void canLatch () { dontlatch = 0; }
   
-  //Set the dcvalue for a specific outpin between 0-63
-  static void setDC (uint8_t outpin, uint8_t dcvalue);
+  //Set the dcvalues as an array. Do this before calling init() if you want something other than the default.
+  static void setDC (uint8_t new_dcvalues[12]);
 
   //Set the gsvalue for a specific outpin between 0-4095
   static void setOutput (uint8_t outpin, int gsvalue);
