@@ -26,8 +26,9 @@
 //If this is set to 1 the IO refresh loop will happen every time BLANK is pulsed.
 //Careful if you are sharing the same serial bus with other components as 
 //the TLC5941 could latch invalid data when this is run in the ISR. 
-//To protect from this call dontLatch while using other serial
-//components on the same bus and canLatch when done.
+//To protect from this call dontLatch before using other serial
+//components on the same bus and call shiftInAll() when done to make sure valid
+//values are available.
 //Setting this too low will cause a flicker. 1 = 2ms at 2Mhz or 4ms at 1Mhz
 #define PWM_CYCLES 25
 
@@ -54,12 +55,9 @@ class TLC5941Class {
   
   //Call this to prevent invalid data from being latched into the TLC5941 gray scale
   //registers. This is always set to 0 after an XLAT pulse since the shift registers
-  //will be filled with status bits after an XLAT. You must set it back
-  //to 1 after shifting in new data or XLAT will never get pulsed again.
+  //will be filled with status bits after an XLAT. You must call shiftInAll()
+  //or XLAT will never get pulsed again.
   static void dontLatch () { dontlatch = 1; }
-
-  //Call this to allow data to be latched into the TLC5941 gray scale registers.
-  static void canLatch () { dontlatch = 0; }
   
   //Set the dcvalues as an array. Do this before calling init() if you want something other than the default.
   static void setDC (uint8_t new_dcvalues[12]);
